@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MERIDIAN // COMMERCE DESK — Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0907;
+    --bg-panel:#100e0a;
+    --bg-panel-2:#0d0b08;
+    --line:rgba(255,178,48,.16);
+    --line-soft:rgba(255,178,48,.09);
+    --paper:#E7DCC4;      /* primary readable data */
+    --paper-dim:#b6a988;
+    --muted:#867a5f;      /* labels */
+    --muted-2:#5c5442;
+    --amber:#FFB020;      /* phosphor accent */
+    --amber-bright:#FFCB5C;
+    --up:#57E39A;
+    --down:#FF5F56;
+    --glow:0 0 14px rgba(255,176,32,.35);
+    --cell:14px;          /* base mono cell */
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--paper);
+    font-family:"JetBrains Mono",ui-monospace,monospace;
+    font-size:var(--cell);
+    line-height:1.45;
+    font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* ambient phosphor bloom + scanlines, kept faint and behind everything */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(255,176,32,.08), transparent 60%),
+      radial-gradient(100% 60% at 100% 120%, rgba(255,120,20,.05), transparent 55%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px);
+    mix-blend-mode:multiply;opacity:.5;
+  }
+  .wrap{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:0 14px 60px}
+
+  a{color:inherit}
+  ::selection{background:rgba(255,176,32,.28);color:#fff}
+  :focus-visible{outline:1.5px solid var(--amber);outline-offset:2px}
+
+  .mono-label{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .grotesk{font-family:"Space Grotesk",sans-serif}
+  .num{font-variant-numeric:tabular-nums}
+  .up{color:var(--up)} .down{color:var(--down)} .amber{color:var(--amber)}
+  .dim{color:var(--muted)}
+
+  /* ---------- masthead ---------- */
+  header.desk{
+    display:flex;align-items:stretch;justify-content:space-between;gap:12px;
+    border:1px solid var(--line);border-bottom:none;
+    background:linear-gradient(180deg,#12100b,#0c0a07);
+    margin-top:16px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;padding:12px 16px}
+  .brand .mark{
+    width:30px;height:30px;flex:none;border:1px solid var(--amber);
+    display:grid;place-items:center;color:var(--amber);
+    box-shadow:inset 0 0 12px rgba(255,176,32,.18), var(--glow);
+    font-weight:800;font-size:15px;
+  }
+  .brand h1{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:17px;letter-spacing:.02em;margin:0;color:var(--paper);
+    display:flex;align-items:baseline;gap:8px;line-height:1;
+  }
+  .brand h1 span{color:var(--amber);text-shadow:var(--glow)}
+  .brand h1 small{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;color:var(--muted);font-weight:500}
+  .desk-meta{display:flex;align-items:stretch}
+  .desk-meta .cell{
+    display:flex;flex-direction:column;justify-content:center;gap:2px;
+    padding:8px 16px;border-left:1px solid var(--line);min-width:96px;
+  }
+  .desk-meta .cell b{font-size:13px;color:var(--paper);font-weight:600}
+  .live{display:inline-flex;align-items:center;gap:6px;color:var(--up);font-size:11px;letter-spacing:.14em}
+  .live .dot{width:7px;height:7px;background:var(--up);border-radius:50%;box-shadow:0 0 8px var(--up);animation:blink 1.6s steps(1) infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ---------- ticker ---------- */
+  .ticker{
+    border:1px solid var(--line);border-top:1px solid var(--line);
+    background:var(--bg-panel-2);overflow:hidden;position:relative;
+  }
+  .ticker::before,.ticker::after{content:"";position:absolute;top:0;bottom:0;width:44px;z-index:3;pointer-events:none}
+  .ticker::before{left:0;background:linear-gradient(90deg,var(--bg-panel-2),transparent)}
+  .ticker::after{right:0;background:linear-gradient(270deg,var(--bg-panel-2),transparent)}
+  .tape{display:flex;width:max-content;animation:scroll 46s linear infinite}
+  .ticker:hover .tape{animation-play-state:paused}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+  .tick{
+    display:inline-flex;align-items:center;gap:9px;padding:9px 22px;
+    border-right:1px solid var(--line-soft);white-space:nowrap;
+  }
+  .tick .k{color:var(--muted);font-size:10px;letter-spacing:.16em}
+  .tick .v{color:var(--paper);font-weight:600;font-size:13px}
+  .tick .d{font-size:11px;font-weight:600}
+
+  /* ---------- grid ---------- */
+  .grid{
+    display:grid;grid-template-columns:repeat(12,1fr);
+    gap:1px;background:var(--line);border:1px solid var(--line);
+  }
+  .panel{background:var(--bg-panel);padding:14px 16px 16px;min-width:0;position:relative}
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .panel-head .title{display:flex;align-items:baseline;gap:8px}
+  .panel-head h2{font-size:12px;letter-spacing:.13em;text-transform:uppercase;margin:0;color:var(--paper);font-weight:600}
+  .panel-head .tag{font-size:9.5px;letter-spacing:.14em;color:var(--muted-2);text-transform:uppercase}
+  .panel-head .rt{font-size:10px;letter-spacing:.1em;color:var(--muted)}
+
+  .c8{grid-column:span 8} .c4{grid-column:span 4} .c5{grid-column:span 5}
+  .c3{grid-column:span 3} .c6{grid-column:span 6}
+
+  /* ---------- hero chart ---------- */
+  .hero-fig{display:flex;align-items:baseline;gap:18px;margin-bottom:10px;flex-wrap:wrap}
+  .hero-fig .big{
+    font-size:40px;font-weight:700;letter-spacing:-.02em;color:var(--amber);
+    text-shadow:var(--glow);line-height:.9;font-family:"Space Grotesk",sans-serif;
+  }
+  .hero-fig .sub{display:flex;flex-direction:column;gap:2px}
+  .chart-wrap{position:relative;width:100%}
+  svg.chart{display:block;width:100%;height:auto;overflow:visible}
+  .cross-read{
+    position:absolute;top:0;left:0;pointer-events:none;opacity:0;transition:opacity .1s;
+    background:#050403;border:1px solid var(--amber);padding:5px 8px;font-size:11px;
+    box-shadow:var(--glow);white-space:nowrap;transform:translate(-50%,-115%);z-index:4;
+  }
+  .cross-read b{color:var(--amber)}
+
+  /* ---------- readout tiles ---------- */
+  .readout{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);height:100%}
+  .rtile{background:var(--bg-panel-2);padding:11px 13px;display:flex;flex-direction:column;gap:3px;flex:1;justify-content:center}
+  .rtile .k{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+  .rtile .row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .rtile .v{font-size:23px;font-weight:700;color:var(--paper);letter-spacing:-.01em}
+  .rtile .v.acc{color:var(--amber);text-shadow:var(--glow)}
+  .rtile .delta{font-size:11px;font-weight:600}
+  .spark{display:block;height:22px;width:100%;margin-top:2px;overflow:visible}
+
+  /* ---------- bar-rank list ---------- */
+  .rank{display:flex;flex-direction:column;gap:8px}
+  .rank .r{display:grid;grid-template-columns:118px 1fr 78px;align-items:center;gap:10px}
+  .rank .lbl{font-size:11.5px;color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rank .track{height:12px;background:var(--bg-panel-2);position:relative;border:1px solid var(--line-soft)}
+  .rank .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#8a5a12,var(--amber));box-shadow:inset 0 0 8px rgba(255,200,90,.3)}
+  .rank .val{text-align:right;font-size:11.5px;color:var(--paper-dim);font-weight:500}
+  .rank .val b{color:var(--paper)}
+
+  /* ---------- data tables ---------- */
+  table.tt{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.tt th{
+    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:500;text-align:right;padding:0 0 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  table.tt th:first-child,table.tt td:first-child{text-align:left}
+  table.tt td{padding:7px 0;text-align:right;border-bottom:1px solid var(--line-soft);color:var(--paper-dim);white-space:nowrap}
+  table.tt td.k{color:var(--paper);font-weight:500}
+  table.tt tr:last-child td{border-bottom:none}
+  table.tt tr:hover td{background:rgba(255,176,32,.04)}
+  .microbar{display:inline-block;height:7px;background:var(--amber);vertical-align:middle;box-shadow:0 0 6px rgba(255,176,32,.4)}
+  .cat-tag{font-size:9px;letter-spacing:.08em;color:var(--muted-2);text-transform:uppercase}
+  .scroll-x{overflow-x:auto}
+
+  /* ---------- mix / payment stacked ---------- */
+  .mix-row{display:flex;flex-direction:column;gap:9px}
+  .mix{display:grid;grid-template-columns:64px 1fr 46px;align-items:center;gap:8px;font-size:11px}
+  .mix .m-lbl{color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mix .m-track{height:10px;background:var(--bg-panel-2);border:1px solid var(--line-soft);position:relative}
+  .mix .m-fill{position:absolute;inset:0 auto 0 0;background:var(--paper-dim)}
+  .mix .m-val{text-align:right;color:var(--paper-dim)}
+
+  .devbar{display:flex;height:20px;border:1px solid var(--line);margin:2px 0 10px}
+  .devbar span{display:flex;align-items:center;justify-content:center;font-size:9.5px;color:#0a0907;font-weight:700;letter-spacing:.05em;overflow:hidden}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:10px;color:var(--muted)}
+  .legend i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:middle}
+
+  /* status bars */
+  .stat{display:flex;flex-direction:column;gap:9px}
+  .stat .s{display:grid;grid-template-columns:76px 1fr 58px;align-items:center;gap:9px;font-size:11px}
+  .stat .s .st{height:11px;background:var(--bg-panel-2);border:1px solid var(--line-soft);position:relative}
+  .stat .s .st i{position:absolute;inset:0 auto 0 0}
+
+  footer.status{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    border:1px solid var(--line);border-top:none;background:var(--bg-panel-2);
+    padding:8px 16px;font-size:10.5px;color:var(--muted);letter-spacing:.06em;
+  }
+  footer.status .prompt{color:var(--amber)}
+  footer.status .caret{display:inline-block;width:8px;height:14px;background:var(--amber);vertical-align:-2px;margin-left:4px;animation:blink 1.1s steps(1) infinite;box-shadow:var(--glow)}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1080px){
+    .c8,.c4,.c5,.c3,.c6{grid-column:span 12}
+    .desk-meta{display:none}
+  }
+  @media (max-width:560px){
+    :root{--cell:13px}
+    .brand h1{font-size:14px}
+    .hero-fig .big{font-size:30px}
+    .rank .r{grid-template-columns:92px 1fr 70px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .tape{animation:none}
+    .ticker{overflow-x:auto}
+    .live .dot,footer.status .caret{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="desk">
+    <div class="brand">
+      <div class="mark">M</div>
+      <h1>MERIDIAN<span>//</span>COMMERCE DESK<small>REV.OPS TERMINAL v3.1</small></h1>
+    </div>
+    <div class="desk-meta">
+      <div class="cell">
+        <span class="mono-label">Coverage</span>
+        <b>2020 — 2026</b>
+      </div>
+      <div class="cell">
+        <span class="mono-label">Session</span>
+        <b id="clock">--:--:--</b>
+      </div>
+      <div class="cell">
+        <span class="mono-label">Feed</span>
+        <b><span class="live"><span class="dot"></span>LIVE</span></b>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== TICKER ===================== -->
+  <div class="ticker" aria-label="Key performance ticker">
+    <div class="tape" id="tape"></div>
+  </div>
+
+  <!-- ===================== MAIN GRID ===================== -->
+  <main class="grid">
+
+    <!-- HERO: revenue time series -->
+    <section class="panel c8">
+      <div class="panel-head">
+        <div class="title">
+          <h2>REV.MONTHLY</h2><span class="tag">USD · 75 periods · order revenue</span>
+        </div>
+        <span class="rt">MA/3 overlay · hover to inspect</span>
+      </div>
+      <div class="hero-fig">
+        <div class="big">$3.14M</div>
+        <div class="sub">
+          <span class="mono-label">Net revenue · trailing 75 mo</span>
+          <span><b class="up">▲ 12.7%</b> <span class="dim">YoY</span> &nbsp;·&nbsp; <span class="num">25,000</span> <span class="dim">orders</span> &nbsp;·&nbsp; peak <b class="amber">$44,793</b> <span class="dim">2026-01</span></span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <svg class="chart" id="revChart" viewBox="0 0 1000 300" preserveAspectRatio="none" role="img" aria-label="Monthly revenue 2020 to 2026"></svg>
+        <div class="cross-read" id="cross"></div>
+      </div>
+    </section>
+
+    <!-- READOUT TILES -->
+    <aside class="panel c4" style="padding:0;background:transparent;border:none">
+      <div class="readout" id="readout"></div>
+    </aside>
+
+    <!-- CATEGORY RANK -->
+    <section class="panel c5">
+      <div class="panel-head">
+        <div class="title"><h2>REV.BY_CATEGORY</h2><span class="tag">14 lines</span></div>
+        <span class="rt" id="catTotal"></span>
+      </div>
+      <div class="rank" id="catRank"></div>
+    </section>
+
+    <!-- CHANNEL TABLE -->
+    <section class="panel c4">
+      <div class="panel-head">
+        <div class="title"><h2>ACQ.CHANNELS</h2><span class="tag">lifetime</span></div>
+        <span class="rt">churn flagged</span>
+      </div>
+      <div class="scroll-x">
+        <table class="tt" id="chTable">
+          <thead><tr><th>Channel</th><th>Cust</th><th>Revenue</th><th>Spend</th><th>Chn%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MIX: payment + device -->
+    <section class="panel c3">
+      <div class="panel-head">
+        <div class="title"><h2>PAYMENT.MIX</h2></div>
+        <span class="rt">by orders</span>
+      </div>
+      <div class="mix-row" id="payMix" style="margin-bottom:14px"></div>
+      <div class="panel-head" style="margin-bottom:8px"><div class="title"><h2>DEVICE.SPLIT</h2></div></div>
+      <div class="devbar" id="devBar"></div>
+      <div class="legend" id="devLegend"></div>
+    </section>
+
+    <!-- TIER LTV -->
+    <section class="panel c3">
+      <div class="panel-head">
+        <div class="title"><h2>LTV.BY_TIER</h2></div>
+        <span class="rt">$12.47M</span>
+      </div>
+      <div class="rank" id="tierRank"></div>
+    </section>
+
+    <!-- GEO -->
+    <section class="panel c4">
+      <div class="panel-head">
+        <div class="title"><h2>GEO.MARKETS</h2><span class="tag">top 10 / 20</span></div>
+        <span class="rt">by revenue</span>
+      </div>
+      <div class="scroll-x">
+        <table class="tt" id="geoTable">
+          <thead><tr><th>Country</th><th>Cust</th><th>Revenue</th><th></th><th>Chn%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="panel c5">
+      <div class="panel-head">
+        <div class="title"><h2>PRODUCTS.TOP</h2><span class="tag">rank by revenue</span></div>
+        <span class="rt">return-rate bar</span>
+      </div>
+      <div class="scroll-x">
+        <table class="tt" id="prodTable">
+          <thead><tr><th>#</th><th>Product</th><th>Ord</th><th>Revenue</th><th>Rt★</th><th>Ret%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ORDER STATUS -->
+    <section class="panel c3">
+      <div class="panel-head"><div class="title"><h2>ORDER.STATUS</h2></div><span class="rt">25,000</span></div>
+      <div class="stat" id="statusBars"></div>
+    </section>
+
+    <!-- DELIVERY DIST -->
+    <section class="panel c5">
+      <div class="panel-head"><div class="title"><h2>FULFILL.DELIVERY</h2><span class="tag">days → orders</span></div><span class="rt">median ~3d</span></div>
+      <svg class="chart" id="delChart" viewBox="0 0 640 150" preserveAspectRatio="none" style="height:150px" role="img" aria-label="Delivery days distribution"></svg>
+    </section>
+
+    <!-- DISCOUNT BUCKETS -->
+    <section class="panel c4">
+      <div class="panel-head"><div class="title"><h2>PROMO.DEPTH</h2><span class="tag">discount → AOV</span></div></div>
+      <div class="scroll-x">
+        <table class="tt" id="discTable">
+          <thead><tr><th>Band</th><th>Orders</th><th>Revenue</th><th>AOV</th><th>Ret%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== STATUS BAR ===================== -->
+  <footer class="status">
+    <span><span class="prompt">meridian@desk:~$</span> query --scope=all --range=2020..2026 --status=OK<span class="caret"></span></span>
+    <span>ROWS 25,000 · CUSTOMERS 7,663/8,000 · RETURN 8.1% · CHURN 8.9% · UPDATED 2026-07-01</span>
+  </footer>
+</div>
+
+<script>
+/* ============ DATA (real aggregates) ============ */
+const MONTH_REV = [
+ 35415.25,34304.78,32642.23,34865.39,38625.73,31689.22,31542.99,35804.39,34467.9,31217.93,36607.41,39996.64,
+ 31245.22,30976.31,36891.43,30250.04,34354.09,32344.03,33495.74,33747.82,30858.17,33889.76,31966,39234.46,
+ 35008.98,25922.18,31024.2,35381.99,32317.62,39403.82,31442.92,35474.91,33303.4,39203.31,36954.4,34494.54,
+ 38618.99,32628.65,34346.46,36986.87,39628.39,34020.34,33716.87,31889.91,33957.89,39317.26,34414.38,32063.21,
+ 31774.33,32650.56,38111.12,33388.59,29911.52,31217.29,33667.59,31282.29,36001.08,31867.25,34159.4,31629.3,
+ 32012.75,29197.88,38073.94,31374.44,36208.38,40777.79,41236.16,34388.76,34675.45,39940.71,28149.83,39321.84,
+ 44793.18,38488.48,32872.17
+];
+const START_YEAR = 2020;
+const MONTH_LABELS = MONTH_REV.map((_,i)=>{const y=START_YEAR+Math.floor(i/12);const m=(i%12)+1;return y+"-"+String(m).padStart(2,"0");});
+
+const BY_YEAR = {2020:510460.1,2021:486231.19,2022:493283.85,2023:503252.43,2024:483934.7,2025:521307.17,2026:137935.22};
+const YEAR_ORDERS = {2020:3994,2021:3976,2022:3991,2023:3910,2024:4034,2025:4073,2026:1022};
+
+const CATS = [
+ ["Electronics",1148937],["Clothing & Apparel",449288.68],["Home & Kitchen",434212.35],
+ ["Sports & Outdoors",159620.11],["Jewelry & Access.",145627.2],["Office Supplies",133472.15],
+ ["Toys & Games",114062.97],["Beauty & Personal",104587.53],["Books",96013.58],["Automotive",94446],
+ ["Travel & Luggage",91712.79],["Health & Wellness",60230.87],["Food & Grocery",59119.13],["Pet Supplies",45074.3]
+];
+const CAT_TOTAL = 3136404.66;
+
+const CHANNELS = [
+ ["Organic Search",2194,3384734.98,1542.72,8.1],["Social Media",1758,2564603.58,1458.82,9.3],
+ ["Email Campaign",1494,2358333.62,1578.54,9.0],["Paid Ad",1255,2049597.77,1633.15,9.0],
+ ["Direct",826,1365831.42,1653.55,9.6],["Referral",473,746037.43,1577.25,9.9]
+];
+
+const PAYMENTS = [
+ ["Credit Card",9522],["Debit Card",5495],["PayPal",4528],["UPI / Wallet",2538],
+ ["Buy Now Pay Later",1504],["Bank Transfer",925],["Crypto",488]
+];
+const DEVICES = [["Mobile",13989],["Desktop",8090],["Tablet",2921]];
+
+const TIERS = [
+ ["Free",6190023.44,4443,1393.21,9.5],["Silver",2410864.42,1736,1388.75,7.1],
+ ["Gold",2193440.64,1177,1863.59,9.9],["Platinum",1674810.3,644,2600.64,8.2]
+];
+
+const GEO = [
+ ["United States",2509,3921516.77,9.6],["United Kingdom",800,1272659.37,8.0],["India",711,1184188.13,7.5],
+ ["Germany",637,919908.26,10.0],["France",483,792082.73,9.3],["Canada",409,584447.18,9.8],
+ ["Brazil",370,567797.81,5.7],["Australia",323,518779.38,8.4],["Mexico",288,458072.65,8.3],["Japan",238,432261.11,12.2]
+];
+
+const PRODUCTS = [
+ ["Electronics","Portable Charger 20000mAh",466,124113.88,3.96,7],
+ ["Electronics","Smart Watch Series 5",423,110620.64,3.99,10],
+ ["Electronics","Wireless Earbuds Pro",424,109841.15,3.94,8],
+ ["Electronics","Webcam 4K",420,108639.64,4.05,8],
+ ["Electronics","USB-C Hub",416,107686.96,4.02,8],
+ ["Electronics","Smart Plug 4-Pack",448,107178.44,3.93,9],
+ ["Electronics","Mechanical Keyboard",411,105529.52,3.93,8],
+ ["Electronics","Bluetooth Speaker",409,105491.08,4.03,9],
+ ["Electronics","Gaming Mouse RGB",430,103015.45,3.99,10],
+ ["Electronics","LED Desk Lamp",409,100458.36,4.01,8],
+ ["Home & Kitchen","Wall Clock Modern",294,45707.09,4.04,9],
+ ["Clothing","Sports Socks 6-Pack",389,45603.36,4.06,7]
+];
+
+const STATUS = [["Delivered",20497,"var(--up)"],["Returned",2020,"var(--down)"],["Cancelled",1456,"#c08a2a"],["Processing",1027,"var(--amber)"]];
+const DELIVERY = [[1,2050],[2,3709],[3,6217],[4,4903],[5,3737],[7,2591],[10,1292],[14,501]];
+const DISCOUNTS = [["0%",16239,2161393.86,133.1,8.0],["1-10%",3915,489749.78,125.1,8.5],["11-20%",3069,332701.56,108.41,8.2],["21-30%",1213,112641.1,92.86,6.7],["31%+",564,39918.36,70.78,8.7]];
+
+/* ============ HELPERS ============ */
+const $=(s,el=document)=>el.querySelector(s);
+const usd=n=>"$"+Math.round(n).toLocaleString("en-US");
+const comp=n=>n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"k":"$"+Math.round(n);
+const pct=n=>n.toFixed(1)+"%";
+const SVGNS="http://www.w3.org/2000/svg";
+function sv(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+/* ============ CLOCK ============ */
+function tick(){const d=new Date();$("#clock").textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,"0")).join(":");}
+tick();setInterval(tick,1000);
+
+/* ============ TICKER TAPE ============ */
+(function(){
+  const items=[
+    ["REV","$3.14M","▲ 12.7%","up"],["ORDERS","25,000","",""],["AOV","$125.46","▲ 4.2%","up"],
+    ["CUSTOMERS","7,663 / 8,000","",""],["CHURN","8.9%","▲ 0.8%","down"],["RETURN","8.1%","▼ 0.1%","up"],
+    ["NEW·12M","1,199","",""],["ACTIVE","7,285","",""],["TOP·CAT","Electronics $1.15M","",""],
+    ["TOP·GEO","United States $3.92M","",""],["MOBILE","56%","",""],["PEAK·MO","2026-01 $44,793","▲ 39.9%","up"]
+  ];
+  const build=()=>items.map(([k,v,d,c])=>`<span class="tick"><span class="k">${k}</span><span class="v">${v}</span>${d?`<span class="d ${c}">${d}</span>`:""}</span>`).join("");
+  $("#tape").innerHTML=build()+build();
+})();
+
+/* ============ HERO CHART ============ */
+(function(){
+  const svg=$("#revChart"),W=1000,H=300,padT=18,padB=26,padL=8,padR=8;
+  const n=MONTH_REV.length, min=Math.min(...MONTH_REV)*0.94, max=Math.max(...MONTH_REV)*1.03;
+  const X=i=>padL+i/(n-1)*(W-padL-padR);
+  const Y=v=>padT+(1-(v-min)/(max-min))*(H-padT-padB);
+  // MA3
+  const ma=MONTH_REV.map((_,i)=>{const s=Math.max(0,i-2);const seg=MONTH_REV.slice(s,i+1);return seg.reduce((a,b)=>a+b,0)/seg.length;});
+
+  // horizontal grid
+  for(let g=0;g<=4;g++){const y=padT+g/4*(H-padT-padB);
+    svg.appendChild(sv("line",{x1:padL,x2:W-padR,y1:y,y2:y,stroke:"rgba(255,178,48,.08)","stroke-width":1}));
+    const val=max-(g/4)*(max-min);
+    svg.appendChild(sv("text",{x:padL+2,y:y-3,fill:"#5c5442","font-size":9,"font-family":"JetBrains Mono"})).textContent=comp(val);
+  }
+  // year boundaries
+  for(let i=0;i<n;i++){if(i%12===0){const x=X(i);
+    svg.appendChild(sv("line",{x1:x,x2:x,y1:padT,y2:H-padB,stroke:"rgba(255,178,48,.12)","stroke-width":1,"stroke-dasharray":"2 4"}));
+    svg.appendChild(sv("text",{x:x+3,y:H-padB+14,fill:"#867a5f","font-size":10,"letter-spacing":"1","font-family":"JetBrains Mono"})).textContent=START_YEAR+i/12;
+  }}
+  // area
+  let ap="M "+X(0)+" "+(H-padB);
+  MONTH_REV.forEach((v,i)=>ap+=" L "+X(i).toFixed(1)+" "+Y(v).toFixed(1));
+  ap+=" L "+X(n-1)+" "+(H-padB)+" Z";
+  const grad=sv("linearGradient",{id:"ag",x1:0,y1:0,x2:0,y2:1});
+  grad.appendChild(sv("stop",{offset:"0%","stop-color":"rgba(255,176,32,.34)"}));
+  grad.appendChild(sv("stop",{offset:"100%","stop-color":"rgba(255,176,32,0)"}));
+  svg.appendChild(sv("defs",{})).appendChild(grad);
+  svg.appendChild(sv("path",{d:ap,fill:"url(#ag)"}));
+  // raw line (thin, dim)
+  let lp="M "+X(0)+" "+Y(MONTH_REV[0]);
+  MONTH_REV.forEach((v,i)=>{if(i)lp+=" L "+X(i).toFixed(1)+" "+Y(v).toFixed(1);});
+  svg.appendChild(sv("path",{d:lp,fill:"none",stroke:"rgba(231,220,196,.35)","stroke-width":1}));
+  // MA3 line (bright amber, glow)
+  let mp="M "+X(0)+" "+Y(ma[0]);
+  ma.forEach((v,i)=>{if(i)mp+=" L "+X(i).toFixed(1)+" "+Y(v).toFixed(1);});
+  svg.appendChild(sv("path",{d:mp,fill:"none",stroke:"#FFB020","stroke-width":2,"stroke-linejoin":"round",style:"filter:drop-shadow(0 0 4px rgba(255,176,32,.6))"}));
+  // peak marker
+  const pk=MONTH_REV.indexOf(Math.max(...MONTH_REV));
+  svg.appendChild(sv("circle",{cx:X(pk),cy:Y(MONTH_REV[pk]),r:3.5,fill:"#FFCB5C",stroke:"#0a0907","stroke-width":1.5,style:"filter:drop-shadow(0 0 5px rgba(255,203,92,.9))"}));
+
+  // interactive crosshair
+  const cLine=sv("line",{x1:0,x2:0,y1:padT,y2:H-padB,stroke:"var(--amber)","stroke-width":1,opacity:0});
+  const cDot=sv("circle",{r:3.5,fill:"#0a0907",stroke:"var(--amber)","stroke-width":1.5,opacity:0});
+  svg.appendChild(cLine);svg.appendChild(cDot);
+  const read=$("#cross"),wrap=svg.parentElement;
+  svg.addEventListener("pointermove",e=>{
+    const r=svg.getBoundingClientRect();const px=(e.clientX-r.left)/r.width*W;
+    let i=Math.round((px-padL)/(W-padL-padR)*(n-1));i=Math.max(0,Math.min(n-1,i));
+    const x=X(i),y=Y(MONTH_REV[i]);
+    cLine.setAttribute("x1",x);cLine.setAttribute("x2",x);cLine.setAttribute("opacity",1);
+    cDot.setAttribute("cx",x);cDot.setAttribute("cy",y);cDot.setAttribute("opacity",1);
+    read.style.opacity=1;read.style.left=(x/W*r.width)+"px";read.style.top=(y/H*r.height)+"px";
+    read.innerHTML=`${MONTH_LABELS[i]} &nbsp; <b>${usd(MONTH_REV[i])}</b>`;
+  });
+  svg.addEventListener("pointerleave",()=>{cLine.setAttribute("opacity",0);cDot.setAttribute("opacity",0);read.style.opacity=0;});
+})();
+
+/* ============ READOUT TILES ============ */
+(function(){
+  function sparkline(vals,color){
+    const w=120,h=22,mn=Math.min(...vals),mx=Math.max(...vals);
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-(v-mn)/(mx-mn||1)*h).toFixed(1)}`).join(" ");
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.4" style="filter:drop-shadow(0 0 3px ${color})"/></svg>`;
+  }
+  function bars(vals,color){
+    const w=120,h=22,mx=Math.max(...vals),bw=w/vals.length;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`+vals.map((v,i)=>{const bh=v/mx*h;return `<rect x="${(i*bw+1).toFixed(1)}" y="${(h-bh).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${bh.toFixed(1)}" fill="${color}"/>`;}).join("")+`</svg>`;
+  }
+  const yrRev=Object.values(BY_YEAR).slice(0,6);
+  const yrOrd=Object.values(YEAR_ORDERS).slice(0,6);
+  const tiles=[
+    {k:"Net Revenue",v:"$3.14M",acc:true,d:'<span class="delta up">▲ 12.7% YoY</span>',chart:sparkline(MONTH_REV,"#FFB020")},
+    {k:"Orders",v:"25,000",d:'<span class="delta dim">204k units</span>',chart:bars(yrOrd,"#57E39A")},
+    {k:"Avg Order Value",v:"$125.46",d:'<span class="delta up">▲ 4.2%</span>',chart:sparkline([127.81,122.29,123.6,128.71,119.96,127.99],"#c9bd9a")},
+    {k:"Active Customers",v:"7,285",d:'<span class="delta dim">of 8,000 · 91%</span>',chart:bars([3104,3116,3127,3085,3144,3168],"#c08a2a")},
+    {k:"Churn Rate",v:"8.9%",d:'<span class="delta down">▲ 0.8pp</span>'},
+    {k:"Return Rate",v:"8.1%",d:'<span class="delta up">▼ 0.1pp</span>'}
+  ];
+  $("#readout").innerHTML=tiles.map(t=>`
+    <div class="rtile">
+      <span class="k">${t.k}</span>
+      <div class="row"><span class="v ${t.acc?'acc':''}">${t.v}</span>${t.d||""}</div>
+      ${t.chart||""}
+    </div>`).join("");
+})();
+
+/* ============ CATEGORY RANK ============ */
+(function(){
+  const mx=CATS[0][1];
+  $("#catTotal").textContent="Σ "+comp(CAT_TOTAL);
+  $("#catRank").innerHTML=CATS.map(([name,rev])=>`
+    <div class="r">
+      <span class="lbl">${name}</span>
+      <span class="track"><span class="fill" style="width:${(rev/mx*100).toFixed(1)}%"></span></span>
+      <span class="val"><b>${comp(rev)}</b> <span class="dim">${(rev/CAT_TOTAL*100).toFixed(1)}%</span></span>
+    </div>`).join("");
+})();
+
+/* ============ CHANNEL TABLE ============ */
+(function(){
+  $("#chTable tbody").innerHTML=CHANNELS.map(([c,cu,rev,sp,ch])=>`
+    <tr><td class="k">${c}</td><td>${cu.toLocaleString()}</td><td>${comp(rev)}</td><td>$${sp.toFixed(0)}</td>
+    <td class="${ch>=9.3?'down':'up'}">${ch.toFixed(1)}</td></tr>`).join("");
+})();
+
+/* ============ PAYMENT MIX + DEVICE ============ */
+(function(){
+  const tot=PAYMENTS.reduce((a,[,o])=>a+o,0),mx=PAYMENTS[0][1];
+  $("#payMix").innerHTML=PAYMENTS.map(([m,o])=>`
+    <div class="mix"><span class="m-lbl">${m}</span>
+    <span class="m-track"><span class="m-fill" style="width:${(o/mx*100).toFixed(0)}%"></span></span>
+    <span class="m-val">${(o/tot*100).toFixed(0)}%</span></div>`).join("");
+  const dtot=DEVICES.reduce((a,[,o])=>a+o,0);
+  const cols=["#FFB020","#c08a2a","#6b5a34"];
+  $("#devBar").innerHTML=DEVICES.map(([d,o],i)=>`<span style="flex:${o};background:${cols[i]}">${Math.round(o/dtot*100)}%</span>`).join("");
+  $("#devLegend").innerHTML=DEVICES.map(([d,o],i)=>`<span><i style="background:${cols[i]}"></i>${d} ${o.toLocaleString()}</span>`).join("");
+})();
+
+/* ============ TIER LTV ============ */
+(function(){
+  const mx=TIERS[0][1];
+  $("#tierRank").innerHTML=TIERS.map(([t,rev,cu,sp,ch])=>`
+    <div class="r">
+      <span class="lbl">${t} <span class="dim">${cu.toLocaleString()}</span></span>
+      <span class="track"><span class="fill" style="width:${(rev/mx*100).toFixed(1)}%"></span></span>
+      <span class="val"><b>${comp(rev)}</b></span>
+    </div>`).join("");
+})();
+
+/* ============ GEO TABLE ============ */
+(function(){
+  const mx=GEO[0][2];
+  $("#geoTable tbody").innerHTML=GEO.map(([c,cu,rev,ch])=>`
+    <tr><td class="k">${c}</td><td>${cu.toLocaleString()}</td><td>${comp(rev)}</td>
+    <td style="width:56px"><span class="microbar" style="width:${(rev/mx*46).toFixed(0)}px"></span></td>
+    <td class="${ch>=9.5?'down':'up'}">${ch.toFixed(1)}</td></tr>`).join("");
+})();
+
+/* ============ PRODUCTS TABLE ============ */
+(function(){
+  $("#prodTable tbody").innerHTML=PRODUCTS.map(([cat,name,ord,rev,rt,ret],i)=>`
+    <tr><td class="dim">${String(i+1).padStart(2,"0")}</td>
+    <td class="k">${name}<br><span class="cat-tag">${cat}</span></td>
+    <td>${ord}</td><td>${comp(rev)}</td><td class="amber">${rt.toFixed(2)}</td>
+    <td><span class="microbar" style="width:${ret*2.2}px;background:${ret>=9?'var(--down)':'var(--amber)'}"></span> ${ret}</td></tr>`).join("");
+})();
+
+/* ============ STATUS BARS ============ */
+(function(){
+  const tot=STATUS.reduce((a,[,o])=>a+o,0),mx=Math.max(...STATUS.map(s=>s[1]));
+  $("#statusBars").innerHTML=STATUS.map(([s,o,c])=>`
+    <div class="s"><span class="dim">${s}</span>
+    <span class="st"><i style="width:${(o/mx*100).toFixed(0)}%;background:${c}"></i></span>
+    <span style="text-align:right">${o.toLocaleString()}</span></div>`).join("");
+})();
+
+/* ============ DELIVERY DIST ============ */
+(function(){
+  const svg=$("#delChart"),W=640,H=150,pb=22,pt=8;
+  const mx=Math.max(...DELIVERY.map(d=>d[1])),bw=W/DELIVERY.length;
+  DELIVERY.forEach(([day,ord],i)=>{
+    const bh=(ord/mx)*(H-pt-pb),x=i*bw+6,y=H-pb-bh;
+    const g=sv("linearGradient",{id:"dg"+i,x1:0,y1:0,x2:0,y2:1});
+    g.appendChild(sv("stop",{offset:"0%","stop-color":"#FFCB5C"}));
+    g.appendChild(sv("stop",{offset:"100%","stop-color":"#8a5a12"}));
+    svg.appendChild(sv("defs",{})).appendChild(g);
+    svg.appendChild(sv("rect",{x,y,width:bw-12,height:bh,fill:"url(#dg"+i+")"}));
+    svg.appendChild(sv("text",{x:x+(bw-12)/2,y:y-4,fill:"#b6a988","font-size":10,"text-anchor":"middle","font-family":"JetBrains Mono"})).textContent=(ord/1000).toFixed(1)+"k";
+    svg.appendChild(sv("text",{x:x+(bw-12)/2,y:H-6,fill:"#867a5f","font-size":10,"text-anchor":"middle","font-family":"JetBrains Mono"})).textContent=day+"d";
+  });
+})();
+
+/* ============ DISCOUNT TABLE ============ */
+(function(){
+  $("#discTable tbody").innerHTML=DISCOUNTS.map(([b,o,rev,aov,ret])=>`
+    <tr><td class="k">${b}</td><td>${o.toLocaleString()}</td><td>${comp(rev)}</td>
+    <td class="amber">$${aov.toFixed(0)}</td><td>${ret.toFixed(1)}</td></tr>`).join("");
+})();
+</script>
+</body>
+</html>

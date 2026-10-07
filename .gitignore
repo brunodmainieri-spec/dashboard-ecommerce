@@ -1,0 +1,24 @@
+node_modules
+dist
+public/data
+.DS_Store
+*.local
+
+# Arquivos locais, dependências e segredos (adicionado na importação)
+node_modules/
+.venv/
+dist/
+build/
+.output/
+.cache/
+__pycache__/
+.env
+.env.*
+!.env.example
+!.env.sample
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.log
